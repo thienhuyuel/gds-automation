@@ -3,6 +3,7 @@ export interface TrelloMember { id: string; fullName: string; initials: string; 
 export interface TrelloCard   {
   id:      string;
   name:    string;
+  desc:    string;
   idList:  string;
   labels:  TrelloLabel[];
   due:     string | null;

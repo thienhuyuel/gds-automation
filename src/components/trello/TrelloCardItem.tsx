@@ -17,17 +17,16 @@ export function TrelloCardItem({ card, isSelected, onClick }: TrelloCardItemProp
     <button
       type="button"
       onClick={onClick}
-      className="w-52 shrink-0 rounded-2xl p-4 text-left transition-all duration-200 focus-visible:outline-none"
+      className="w-full rounded-2xl p-4 text-left transition-colors duration-150 focus-visible:outline-none"
       style={{
-        background: DS.surfaceContainerLowest,
-        boxShadow:  isSelected ? DS.elevatedShadow : DS.ambientShadow,
-        border:     `2px solid ${isSelected ? DS.primaryContainer : DS.outlineVariant}`,
+        background: isSelected ? DS.surfaceContainerHigh : DS.surfaceContainerLow,
+        border:     `0.5px solid ${isSelected ? DS.primaryContainer : DS.outlineVariant}`,
       }}
       onMouseEnter={e => {
-        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.boxShadow = DS.elevatedShadow;
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = DS.surfaceContainerHigh;
       }}
       onMouseLeave={e => {
-        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.boxShadow = DS.ambientShadow;
+        if (!isSelected) (e.currentTarget as HTMLButtonElement).style.background = DS.surfaceContainerLow;
       }}
     >
       {/* Labels */}

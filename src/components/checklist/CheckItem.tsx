@@ -9,17 +9,19 @@ interface CheckItemProps {
   label:    string;
   checked:  boolean;
   onChange: (v: boolean) => void;
+  disabled?: boolean;
 }
 
-export function CheckItem({ label, checked, onChange }: CheckItemProps) {
-  const id = useId(); // React 18 — stable, unique, collision-proof
+export function CheckItem({ label, checked, onChange, disabled = false }: CheckItemProps) {
+  const id = useId();
 
   return (
-    <div className="flex items-center gap-3 py-3">
+    <div className={`flex items-center gap-3 py-3 transition-opacity ${disabled ? "opacity-40" : ""}`}>
       <Checkbox
         id={id}
         checked={checked}
         onCheckedChange={v => onChange(v === true)}
+        disabled={disabled}
         className="h-5 w-5 rounded-md"
         style={
           checked
@@ -29,7 +31,7 @@ export function CheckItem({ label, checked, onChange }: CheckItemProps) {
       />
       <Label
         htmlFor={id}
-        className="cursor-pointer select-none text-sm leading-snug"
+        className={`select-none text-sm leading-snug ${disabled ? "cursor-not-allowed" : "cursor-pointer"}`}
         style={{ color: DS.onSurface }}
       >
         {label}

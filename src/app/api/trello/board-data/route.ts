@@ -41,7 +41,7 @@ export async function GET() {
     fetch(trelloUrl(`/boards/${boardId}/lists`, { ...auth, fields: "id,name" })),
     fetch(trelloUrl(`/lists/${SOURCE_LIST_ID}/cards`, {
       ...auth,
-      fields:        "id,name,idList,labels,due,idMembers",
+      fields:        "id,name,desc,idList,labels,due,idMembers",
       filter:        "open",
       members:       "true",
       member_fields: "fullName,initials,avatarHash",
@@ -60,7 +60,7 @@ export async function GET() {
 
   type RawMember = { id: string; fullName: string; initials: string; avatarHash: string | null };
   type RawCard   = {
-    id: string; name: string; idList: string;
+    id: string; name: string; desc: string; idList: string;
     labels:  { id: string; name: string; color: string }[];
     due:     string | null;
     members: RawMember[];

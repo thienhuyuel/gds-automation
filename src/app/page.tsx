@@ -11,15 +11,16 @@ import { DS } from "@/lib/design-tokens";
 import { getCardType, isFormValid } from "@/lib/trello-utils";
 import type { TrelloCard, CardType, CasState, LiveState } from "@/lib/types";
 
-import { AppHeader }           from "@/components/layout/AppHeader";
-import { EtherCard }           from "@/components/ui/EtherCard";
-import { DSIconButton }        from "@/components/ui/DSIconButton";
-import { TrelloBoardSelector } from "@/components/trello/TrelloBoardSelector";
-import { DynamicChecklist }    from "@/components/checklist/DynamicChecklist";
-import { UploadSection }       from "@/components/upload/UploadSection";
-import { PreUploadDialog }     from "@/components/upload/PreUploadDialog";
-import { LightboxDialog }      from "@/components/upload/LightboxDialog";
-import { SubmitCTA }           from "@/components/SubmitCTA";
+import { AppHeader }              from "@/components/layout/AppHeader";
+import { EtherCard }              from "@/components/ui/EtherCard";
+import { DSIconButton }           from "@/components/ui/DSIconButton";
+import { TrelloBoardSelector }    from "@/components/trello/TrelloBoardSelector";
+import { CardDescriptionPanel }   from "@/components/trello/CardDescriptionPanel";
+import { DynamicChecklist }       from "@/components/checklist/DynamicChecklist";
+import { UploadSection }          from "@/components/upload/UploadSection";
+import { PreUploadDialog }        from "@/components/upload/PreUploadDialog";
+import { LightboxDialog }         from "@/components/upload/LightboxDialog";
+import { SubmitCTA }              from "@/components/SubmitCTA";
 
 export default function AutomationControlPage() {
   const board  = useBoardData();
@@ -78,55 +79,60 @@ export default function AutomationControlPage() {
         onRetry={board.fetchBoardData}
       />
 
-      <main className="mx-auto max-w-5xl px-8 py-12">
+      <main className="mx-auto max-w-7xl px-8 py-10">
         <form onSubmit={handleSubmit} noValidate>
-          <div className="flex flex-col gap-6">
+          {/* 3-column grid: col1=card list, col2=desc+checklist (hidden when no card), col3=upload */}
+          <div className={`grid gap-6 ${selectedCard ? "lg:grid-cols-10" : "lg:grid-cols-5"}`}>
 
-            {/* Row 1: Trello Board — full width */}
-            <EtherCard
-              title="Trello Board"
-              badge={board.boardData ? `${board.boardData.cards.length} cards` : undefined}
-              headerEnd={
-                <DSIconButton
-                  onClick={board.fetchBoardData}
-                  disabled={board.isFetchingBoard}
-                  title="Tải lại"
-                >
-                  <RotateCcw className={`h-3.5 w-3.5 ${board.isFetchingBoard ? "animate-spin" : ""}`} />
-                </DSIconButton>
-              }
-            >
-              <TrelloBoardSelector
-                cards={board.boardData?.cards ?? []}
-                selected={selectedCard}
-                onSelect={handleCardSelect}
-                loading={board.isFetchingBoard}
-              />
-            </EtherCard>
+            {/* Col 1: Card list — always visible */}
+            <div className="lg:col-span-2">
+              <EtherCard
+                badge={board.boardData ? `${board.boardData.cards.length} cards` : undefined}
+                headerEnd={
+                  <DSIconButton
+                    onClick={board.fetchBoardData}
+                    disabled={board.isFetchingBoard}
+                    title="Tải lại"
+                  >
+                    <RotateCcw className={`h-3.5 w-3.5 ${board.isFetchingBoard ? "animate-spin" : ""}`} />
+                  </DSIconButton>
+                }
+              >
+                <TrelloBoardSelector
+                  cards={board.boardData?.cards ?? []}
+                  selected={selectedCard}
+                  onSelect={handleCardSelect}
+                  loading={board.isFetchingBoard}
+                />
+              </EtherCard>
+            </div>
 
-            {/* Row 2: Checklist (3 cols) + Upload/Submit (2 cols) */}
-            <div className="grid gap-6 lg:grid-cols-5">
-              <div className="flex flex-col gap-6 lg:col-span-3">
+            {/* Col 2: Description + Checklist — only when card is selected */}
+            {selectedCard && (
+              <div className="flex flex-col gap-6 lg:col-span-5">
+                <CardDescriptionPanel card={selectedCard} />
                 <DynamicChecklist
                   card={selectedCard}
                   cardType={cardType}
                   casState={casState}   onCasChange={setCasState}
                   liveState={liveState} onLiveChange={setLiveState}
+                  hasFiles={upload.fileItems.length > 0}
                 />
               </div>
+            )}
 
-              <div className="flex flex-col gap-6 lg:col-span-2">
-                <UploadSection upload={upload} />
-                <SubmitCTA
-                  formValid={formValid}
-                  isSubmitting={isSubmitting}
-                  selectedCard={selectedCard}
-                  fileCount={upload.fileItems.length}
-                  cardType={cardType}
-                  casState={casState}
-                  liveState={liveState}
-                />
-              </div>
+            {/* Col 3: Upload + Submit — always span-3 (works for both grid-cols-5 and grid-cols-10) */}
+            <div className="flex flex-col gap-6 lg:col-span-3">
+              <UploadSection upload={upload} />
+              <SubmitCTA
+                formValid={formValid}
+                isSubmitting={isSubmitting}
+                selectedCard={selectedCard}
+                fileCount={upload.fileItems.length}
+                cardType={cardType}
+                casState={casState}
+                liveState={liveState}
+              />
             </div>
           </div>
         </form>

@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { DS } from "@/lib/design-tokens";
 import type { TrelloCard } from "@/lib/types";
 import { TrelloCardItem } from "./TrelloCardItem";
@@ -15,11 +14,11 @@ interface TrelloBoardSelectorProps {
 export function TrelloBoardSelector({ cards, selected, onSelect, loading }: TrelloBoardSelectorProps) {
   if (loading) {
     return (
-      <div className="flex gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={i}
-            className="h-36 w-52 shrink-0 animate-pulse rounded-2xl"
+            className="h-28 w-full animate-pulse rounded-2xl"
             style={{ background: DS.surfaceContainerLow }}
           />
         ))}
@@ -36,8 +35,9 @@ export function TrelloBoardSelector({ cards, selected, onSelect, loading }: Trel
   }
 
   return (
-    <ScrollArea className="w-full">
-      <div className="flex gap-3 pb-3">
+    /* Native overflow-y-auto — ScrollArea viewport không nhận max-height từ style */
+    <div className="max-h-[560px] overflow-y-auto">
+      <div className="flex flex-col gap-2 pr-0.5">
         {cards.map(card => (
           <TrelloCardItem
             key={card.id}
@@ -47,7 +47,6 @@ export function TrelloBoardSelector({ cards, selected, onSelect, loading }: Trel
           />
         ))}
       </div>
-      <ScrollBar orientation="horizontal" />
-    </ScrollArea>
+    </div>
   );
 }

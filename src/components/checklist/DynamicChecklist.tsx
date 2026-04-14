@@ -1,5 +1,6 @@
 "use client";
 
+import { Lock } from "lucide-react";
 import { DS } from "@/lib/design-tokens";
 import { EtherCard } from "@/components/ui/EtherCard";
 import { casProgress, liveProgress } from "@/lib/trello-utils";
@@ -12,12 +13,13 @@ interface DynamicChecklistProps {
   cardType:    CardType;
   casState:    CasState;
   liveState:   LiveState;
+  hasFiles:    boolean;
   onCasChange:  (s: CasState)  => void;
   onLiveChange: (s: LiveState) => void;
 }
 
 export function DynamicChecklist({
-  card, cardType, casState, liveState, onCasChange, onLiveChange,
+  card, cardType, casState, liveState, hasFiles, onCasChange, onLiveChange,
 }: DynamicChecklistProps) {
   if (!card) {
     return (
@@ -29,6 +31,8 @@ export function DynamicChecklist({
       </div>
     );
   }
+
+  const disabled = !hasFiles;
 
   const [done, total] = cardType === "CAS"
     ? casProgress(casState)
@@ -45,8 +49,18 @@ export function DynamicChecklist({
       badgeComplete={complete}
       typeTag={cardType}
     >
-      {cardType === "CAS"  && <CasChecklist  state={casState}  onChange={onCasChange}  />}
-      {cardType === "LIVE" && <LiveChecklist state={liveState} onChange={onLiveChange} />}
+      {disabled && (
+        <div
+          className="mb-4 flex items-center gap-2 rounded-xl px-3 py-2.5 text-xs"
+          style={{ background: DS.surfaceContainerHigh, color: DS.outline }}
+        >
+          <Lock className="h-3.5 w-3.5 shrink-0" />
+          Vui lòng tải file lên trước khi điền checklist
+        </div>
+      )}
+
+      {cardType === "CAS"  && <CasChecklist  state={casState}  onChange={onCasChange}  disabled={disabled} />}
+      {cardType === "LIVE" && <LiveChecklist state={liveState} onChange={onLiveChange} disabled={disabled} />}
       {!cardType && (
         <p className="py-2 text-sm" style={{ color: DS.outline }}>
           Card này không có nhãn <strong>CAS</strong> hoặc <strong>LIVE</strong>.

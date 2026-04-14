@@ -3,7 +3,7 @@ import { DS } from "@/lib/design-tokens";
 import type { CardType } from "@/lib/types";
 
 interface EtherCardProps {
-  title:          string;
+  title?:         string;
   badge?:         string;
   badgeComplete?: boolean;
   typeTag?:       CardType;
@@ -20,12 +20,14 @@ export function EtherCard({
       style={{ background: DS.surfaceContainerLowest, boxShadow: DS.ambientShadow }}
     >
       <div className="mb-6 flex items-center gap-3">
-        <h2
-          className="text-sm font-semibold tracking-[-0.01em]"
-          style={{ color: DS.onSurface, fontFamily: "var(--font-manrope), sans-serif" }}
-        >
-          {title}
-        </h2>
+        {title && (
+          <h2
+            className="text-sm font-semibold tracking-[-0.01em]"
+            style={{ color: DS.onSurface, fontFamily: "var(--font-manrope), sans-serif" }}
+          >
+            {title}
+          </h2>
+        )}
 
         {typeTag && (
           <span
