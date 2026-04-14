@@ -39,7 +39,7 @@ export async function GET() {
 
   const [listsRes, cardsRes] = await Promise.all([
     fetch(trelloUrl(`/boards/${boardId}/lists`, { ...auth, fields: "id,name" })),
-    fetch(trelloUrl(`/lists/${SOURCE_LIST_ID}/cards`, { ...auth, fields: "id,name,idList", filter: "open" })),
+    fetch(trelloUrl(`/lists/${SOURCE_LIST_ID}/cards`, { ...auth, fields: "id,name,idList,labels", filter: "open" })),
   ]);
 
   if (!listsRes.ok || !cardsRes.ok) {
@@ -54,7 +54,7 @@ export async function GET() {
 
   const [lists, cards] = await Promise.all([
     listsRes.json() as Promise<{ id: string; name: string }[]>,
-    cardsRes.json() as Promise<{ id: string; name: string; idList: string }[]>,
+    cardsRes.json() as Promise<{ id: string; name: string; idList: string; labels: { id: string; name: string; color: string }[] }[]>,
   ]);
 
   return NextResponse.json({ lists, cards });
