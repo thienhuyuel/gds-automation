@@ -814,8 +814,8 @@ function FileThumb({ item, onRemove }: { item: FileItem; onRemove: () => void })
           />
 
           {/* Overlay — slides in on hover */}
-          <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-black/55 px-2.5 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <p className="flex-1 truncate text-xs text-white" title={item.file.name}>
+          <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 bg-black/55 px-2.5 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <p className="flex-1 break-all text-xs leading-snug text-white">
               {item.file.name}
             </p>
             <span className="shrink-0 text-xs text-white/60">{fmtMB(item.file.size)}</span>
@@ -834,7 +834,7 @@ function FileThumb({ item, onRemove }: { item: FileItem; onRemove: () => void })
         <div className="flex flex-col items-center justify-center gap-3 px-4 py-8">
           <FileImage className="h-8 w-8" style={{ color: DS.outline }} />
           <div className="w-full text-center">
-            <p className="truncate text-xs font-medium" style={{ color: DS.onSurface }} title={item.file.name}>
+            <p className="break-all text-xs font-medium leading-snug" style={{ color: DS.onSurface }}>
               {item.file.name}
             </p>
             <p className="mt-0.5 text-xs" style={{ color: DS.outlineVariant }}>
