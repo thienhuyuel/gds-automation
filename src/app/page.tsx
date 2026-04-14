@@ -8,14 +8,23 @@ import {
   CloudUpload,
   FileImage,
   Loader2,
+  Plus,
   RotateCcw,
   Search,
   Trash,
   X,
+  ZoomIn,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 
 // ─── Design Tokens ─────────────────────────────────────────────────────────────
@@ -130,13 +139,23 @@ export default function AutomationControlPage() {
   const [isDragging,   setDragging]     = useState(false);
   const [isSubmitting, setSubmitting]   = useState(false);
 
-  const fileInputRef  = useRef<HTMLInputElement>(null);
-  const fileItemsRef  = useRef<FileItem[]>([]);
+  // Pre-upload preview dialog
+  const [pendingItems, setPendingItems] = useState<FileItem[]>([]);
+  const [previewOpen,  setPreviewOpen]  = useState(false);
+
+  // Lightbox
+  const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
+
+  const fileInputRef    = useRef<HTMLInputElement>(null);
+  const pendingInputRef = useRef<HTMLInputElement>(null);
+  const fileItemsRef    = useRef<FileItem[]>([]);
   useEffect(() => { fileItemsRef.current = fileItems; }, [fileItems]);
 
   // Cleanup object URLs on unmount
   useEffect(() => {
-    return () => { fileItemsRef.current.forEach(i => { if (i.previewUrl) URL.revokeObjectURL(i.previewUrl); }); };
+    return () => {
+      fileItemsRef.current.forEach(i => { if (i.previewUrl) URL.revokeObjectURL(i.previewUrl); });
+    };
   }, []);
 
   const cardType: CardType = selectedCard ? getCardType(selectedCard) : null;
@@ -171,35 +190,82 @@ export default function AutomationControlPage() {
 
   // ── File handling ──────────────────────────────────────────────────────────
 
-  function addFiles(incoming: File[]) {
-    const remaining = MAX_FILES - fileItems.length;
-    const accepted  = incoming.filter(f => f.size <= MAX_FILE_MB * 1024 * 1024);
-    const rejected  = incoming.filter(f => f.size >  MAX_FILE_MB * 1024 * 1024);
-    const toAdd     = accepted.slice(0, remaining);
-
-    if (rejected.length)             toast.error(`${rejected.length} file vượt quá ${MAX_FILE_MB}MB.`);
-    if (incoming.length > remaining) toast.error(`Chỉ thêm được ${remaining} file nữa (tối đa ${MAX_FILES}).`);
-
+  function makeFileItems(files: File[], currentCount: number): { items: FileItem[]; rejected: number; overflow: number } {
+    const remaining = MAX_FILES - currentCount;
+    const valid     = files.filter(f => f.size <= MAX_FILE_MB * 1024 * 1024);
+    const rejected  = files.length - valid.length;
+    const toAdd     = valid.slice(0, remaining);
+    const overflow  = valid.length - toAdd.length;
     const items: FileItem[] = toAdd.map(f => ({
       file: f,
       previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : null,
     }));
-    setFileItems(prev => [...prev, ...items]);
+    return { items, rejected, overflow };
   }
 
+  // Opens the pre-upload preview dialog with freshly selected files
+  function addToPending(incoming: File[]) {
+    const currentTotal = fileItems.length + pendingItems.length;
+    const { items, rejected, overflow } = makeFileItems(incoming, currentTotal);
+    if (rejected) toast.error(`${rejected} file vượt quá ${MAX_FILE_MB}MB.`);
+    if (overflow) toast.error(`Chỉ thêm được thêm ${MAX_FILES - currentTotal} file nữa (tối đa ${MAX_FILES}).`);
+    if (!items.length) return;
+    setPendingItems(prev => [...prev, ...items]);
+    setPreviewOpen(true);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  // "Thêm file" button inside the preview dialog
+  function addMoreToPending(incoming: File[]) {
+    const currentTotal = fileItems.length + pendingItems.length;
+    const { items, rejected, overflow } = makeFileItems(incoming, currentTotal);
+    if (rejected) toast.error(`${rejected} file vượt quá ${MAX_FILE_MB}MB.`);
+    if (overflow) toast.error(`Tối đa ${MAX_FILES} file tổng cộng.`);
+    if (items.length) setPendingItems(prev => [...prev, ...items]);
+    if (pendingInputRef.current) pendingInputRef.current.value = "";
+  }
+
+  function removePending(index: number) {
+    setPendingItems(prev => {
+      const item = prev[index];
+      if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  function cancelPending() {
+    pendingItems.forEach(i => { if (i.previewUrl) URL.revokeObjectURL(i.previewUrl); });
+    setPendingItems([]);
+    setPreviewOpen(false);
+  }
+
+  function confirmPending() {
+    setFileItems(prev => [...prev, ...pendingItems]);
+    setPendingItems([]);
+    setPreviewOpen(false);
+  }
+
+  // Confirmed-list operations
   function removeFile(index: number) {
     setFileItems(prev => {
       const item = prev[index];
       if (item?.previewUrl) URL.revokeObjectURL(item.previewUrl);
       return prev.filter((_, i) => i !== index);
     });
-    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function openLightbox(index: number) { setLightboxIdx(index); }
+  function closeLightbox()             { setLightboxIdx(null); }
+  function removeFromLightbox() {
+    if (lightboxIdx === null) return;
+    removeFile(lightboxIdx);
+    setLightboxIdx(null);
   }
 
   function handleDrop(e: React.DragEvent) {
     e.preventDefault();
     setDragging(false);
-    addFiles(Array.from(e.dataTransfer.files));
+    addToPending(Array.from(e.dataTransfer.files));
   }
 
   // ── Submit ─────────────────────────────────────────────────────────────────
@@ -360,8 +426,7 @@ export default function AutomationControlPage() {
               <EtherCard title="Đính kèm File" badge={fileItems.length > 0 ? `${fileItems.length}/${MAX_FILES}` : undefined}>
                 <MultiFileDropzone
                   fileItems={fileItems}
-                  onAdd={addFiles}
-                  onRemove={removeFile}
+                  onThumbClick={openLightbox}
                   isDragging={isDragging}
                   onDragOver={e => { e.preventDefault(); setDragging(true); }}
                   onDragLeave={() => setDragging(false)}
@@ -369,13 +434,23 @@ export default function AutomationControlPage() {
                   onClick={() => fileInputRef.current?.click()}
                   maxFiles={MAX_FILES}
                 />
+                {/* Main file picker — feeds pre-upload dialog */}
                 <input
                   ref={fileInputRef}
                   type="file"
                   multiple
                   accept=".jpg,.jpeg,.png,.pdf"
                   className="hidden"
-                  onChange={e => addFiles(Array.from(e.target.files ?? []))}
+                  onChange={e => { addToPending(Array.from(e.target.files ?? [])); }}
+                />
+                {/* Pending file picker — used inside the preview dialog */}
+                <input
+                  ref={pendingInputRef}
+                  type="file"
+                  multiple
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  className="hidden"
+                  onChange={e => { addMoreToPending(Array.from(e.target.files ?? [])); }}
                 />
               </EtherCard>
 
@@ -417,6 +492,26 @@ export default function AutomationControlPage() {
           </div>
         </form>
       </main>
+
+      {/* ── Pre-Upload Preview Dialog ── */}
+      <PreUploadDialog
+        pendingItems={pendingItems}
+        confirmedCount={fileItems.length}
+        maxFiles={MAX_FILES}
+        open={previewOpen}
+        onRemove={removePending}
+        onAddMore={() => pendingInputRef.current?.click()}
+        onCancel={cancelPending}
+        onConfirm={confirmPending}
+      />
+
+      {/* ── Lightbox Dialog ── */}
+      <LightboxDialog
+        item={lightboxIdx !== null ? fileItems[lightboxIdx] : null}
+        open={lightboxIdx !== null}
+        onClose={closeLightbox}
+        onDelete={removeFromLightbox}
+      />
     </div>
   );
 }
@@ -728,24 +823,23 @@ function CheckItem({
 // ─── MultiFileDropzone ────────────────────────────────────────────────────────
 
 function MultiFileDropzone({
-  fileItems, onAdd, onRemove,
+  fileItems, onThumbClick,
   isDragging, onDragOver, onDragLeave, onDrop, onClick, maxFiles,
 }: {
-  fileItems:   FileItem[];
-  onAdd:       (files: File[]) => void;
-  onRemove:    (index: number) => void;
-  isDragging:  boolean;
-  onDragOver:  (e: React.DragEvent) => void;
-  onDragLeave: () => void;
-  onDrop:      (e: React.DragEvent) => void;
-  onClick:     () => void;
-  maxFiles:    number;
+  fileItems:    FileItem[];
+  onThumbClick: (index: number) => void;
+  isDragging:   boolean;
+  onDragOver:   (e: React.DragEvent) => void;
+  onDragLeave:  () => void;
+  onDrop:       (e: React.DragEvent) => void;
+  onClick:      () => void;
+  maxFiles:     number;
 }) {
   const canAdd = fileItems.length < maxFiles;
 
   return (
     <div className="flex flex-col gap-4">
-      {/* Drop area — hidden when full */}
+      {/* Drop zone — hidden when full */}
       {canAdd && (
         <div
           role="button"
@@ -782,12 +876,12 @@ function MultiFileDropzone({
         </div>
       )}
 
-      {/* Thumbnail grid — natural-ratio images, scrollable if tall */}
+      {/* Confirmed thumbnails — click to open lightbox */}
       {fileItems.length > 0 && (
         <div className="overflow-auto rounded-2xl" style={{ maxHeight: "480px" }}>
           <div className="grid grid-cols-2 gap-2">
             {fileItems.map((item, i) => (
-              <FileThumb key={i} item={item} onRemove={() => onRemove(i)} />
+              <FileThumb key={i} item={item} onClick={() => onThumbClick(i)} />
             ))}
           </div>
         </div>
@@ -798,10 +892,13 @@ function MultiFileDropzone({
 
 // ─── FileThumb ────────────────────────────────────────────────────────────────
 
-function FileThumb({ item, onRemove }: { item: FileItem; onRemove: () => void }) {
+function FileThumb({ item, onClick }: { item: FileItem; onClick: () => void }) {
   return (
-    <div
-      className="group relative overflow-hidden rounded-2xl"
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Xem phóng to"
+      className="group relative w-full overflow-hidden rounded-2xl text-left transition-transform duration-150 hover:scale-[1.02] focus-visible:outline-none"
       style={{ background: DS.surfaceContainerLow }}
     >
       {item.previewUrl ? (
@@ -810,28 +907,21 @@ function FileThumb({ item, onRemove }: { item: FileItem; onRemove: () => void })
           <img
             src={item.previewUrl}
             alt={item.file.name}
-            className="block w-full h-auto"
+            className="block h-auto w-full"
           />
-
-          {/* Overlay — slides in on hover */}
-          <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 bg-black/55 px-2.5 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
-            <p className="flex-1 break-all text-xs leading-snug text-white">
-              {item.file.name}
-            </p>
-            <span className="shrink-0 text-xs text-white/60">{fmtMB(item.file.size)}</span>
-            <button
-              type="button"
-              onClick={onRemove}
-              aria-label="Xóa file"
-              className="shrink-0 rounded-lg p-1 text-white transition-colors hover:bg-white/20"
-            >
-              <Trash className="h-3.5 w-3.5" />
-            </button>
+          {/* Zoom hint + name overlay on hover */}
+          <div className="absolute inset-0 flex flex-col justify-between bg-black/40 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <div className="flex justify-end p-2">
+              <ZoomIn className="h-4 w-4 text-white drop-shadow" />
+            </div>
+            <div className="px-2.5 pb-2.5">
+              <p className="break-all text-xs leading-snug text-white">{item.file.name}</p>
+              <p className="text-xs text-white/60">{fmtMB(item.file.size)}</p>
+            </div>
           </div>
         </>
       ) : (
-        /* Non-image placeholder */
-        <div className="flex flex-col items-center justify-center gap-3 px-4 py-8">
+        <div className="flex flex-col items-center justify-center gap-2 px-4 py-8">
           <FileImage className="h-8 w-8" style={{ color: DS.outline }} />
           <div className="w-full text-center">
             <p className="break-all text-xs font-medium leading-snug" style={{ color: DS.onSurface }}>
@@ -841,19 +931,12 @@ function FileThumb({ item, onRemove }: { item: FileItem; onRemove: () => void })
               {fmtMB(item.file.size)}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label="Xóa file"
-            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs transition-colors hover:opacity-80"
-            style={{ background: DS.surfaceContainerHigh, color: DS.outline }}
-          >
-            <Trash className="h-3 w-3" />
-            Xóa
-          </button>
+          <span className="flex items-center gap-1 text-xs" style={{ color: DS.outline }}>
+            <ZoomIn className="h-3 w-3" /> Xem chi tiết
+          </span>
         </div>
       )}
-    </div>
+    </button>
   );
 }
 
@@ -873,5 +956,194 @@ function ValidationHint({ done, label }: { done: boolean; label: string }) {
       </span>
       <span style={{ color: done ? "#15803d" : DS.outline }}>{label}</span>
     </li>
+  );
+}
+
+// ─── PreUploadDialog ──────────────────────────────────────────────────────────
+
+function PreUploadDialog({
+  pendingItems, confirmedCount, maxFiles, open,
+  onRemove, onAddMore, onCancel, onConfirm,
+}: {
+  pendingItems:   FileItem[];
+  confirmedCount: number;
+  maxFiles:       number;
+  open:           boolean;
+  onRemove:       (i: number) => void;
+  onAddMore:      () => void;
+  onCancel:       () => void;
+  onConfirm:      () => void;
+}) {
+  const totalAfter = confirmedCount + pendingItems.length;
+  const canAddMore = totalAfter < maxFiles;
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onCancel(); }}>
+      <DialogContent
+        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-3xl p-0"
+        style={{ background: DS.surfaceContainerLowest, maxWidth: 520 }}
+      >
+        <DialogHeader className="px-6 pt-6 pb-4">
+          <DialogTitle
+            className="text-base font-semibold tracking-[-0.01em]"
+            style={{ color: DS.onSurface, fontFamily: "var(--font-manrope), sans-serif" }}
+          >
+            Xác nhận file tải lên
+          </DialogTitle>
+          <p className="text-xs" style={{ color: DS.outline }}>
+            {pendingItems.length} file đang chờ · Tổng sau khi xác nhận:{" "}
+            <strong style={{ color: DS.onSurface }}>{totalAfter}/{maxFiles}</strong>
+          </p>
+        </DialogHeader>
+
+        {/* Pending thumbnails — scrollable */}
+        <div className="flex-1 overflow-y-auto px-6 pb-2">
+          <div className="grid grid-cols-2 gap-3">
+            {pendingItems.map((item, i) => (
+              <div
+                key={i}
+                className="group relative overflow-hidden rounded-2xl"
+                style={{ background: DS.surfaceContainerLow }}
+              >
+                {item.previewUrl ? (
+                  <>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={item.previewUrl}
+                      alt={item.file.name}
+                      className="block h-auto w-full"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 bg-black/55 px-2.5 py-2">
+                      <p className="flex-1 break-all text-xs leading-snug text-white">{item.file.name}</p>
+                      <span className="shrink-0 text-xs text-white/60">{fmtMB(item.file.size)}</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center gap-2 px-4 py-8">
+                    <FileImage className="h-7 w-7" style={{ color: DS.outline }} />
+                    <p className="break-all text-center text-xs leading-snug" style={{ color: DS.onSurface }}>
+                      {item.file.name}
+                    </p>
+                    <p className="text-xs" style={{ color: DS.outlineVariant }}>{fmtMB(item.file.size)}</p>
+                  </div>
+                )}
+                {/* Remove button */}
+                <button
+                  type="button"
+                  onClick={() => onRemove(i)}
+                  aria-label="Xóa file"
+                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-opacity hover:bg-black/80"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            ))}
+
+            {/* "Add more" card */}
+            {canAddMore && (
+              <button
+                type="button"
+                onClick={onAddMore}
+                className="flex flex-col items-center justify-center gap-2 rounded-2xl py-10 transition-colors"
+                style={{ border: `2px dashed ${DS.outlineVariant}`, color: DS.outline }}
+                onMouseEnter={e => (e.currentTarget.style.borderColor = DS.primaryContainer)}
+                onMouseLeave={e => (e.currentTarget.style.borderColor = DS.outlineVariant)}
+              >
+                <Plus className="h-5 w-5" />
+                <span className="text-xs font-medium">Thêm file</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter className="flex gap-3 border-t px-6 py-4" style={{ borderColor: `${DS.outlineVariant}40` }}>
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={onCancel}
+            className="flex-1 rounded-2xl"
+            style={{ color: DS.outline }}
+          >
+            Hủy
+          </Button>
+          <Button
+            type="button"
+            onClick={onConfirm}
+            disabled={pendingItems.length === 0}
+            className="flex-1 rounded-2xl font-semibold text-white"
+            style={{ background: pendingItems.length ? DS.ctaGradient : DS.surfaceContainerHigh }}
+          >
+            Xác nhận & Tải lên
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── LightboxDialog ───────────────────────────────────────────────────────────
+
+function LightboxDialog({
+  item, open, onClose, onDelete,
+}: {
+  item:     FileItem | null;
+  open:     boolean;
+  onClose:  () => void;
+  onDelete: () => void;
+}) {
+  if (!item) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
+      <DialogContent
+        className="flex max-h-[95vh] flex-col gap-0 overflow-hidden rounded-3xl p-0"
+        style={{ background: "#000", maxWidth: "min(90vw, 900px)" }}
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Đóng"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
+        >
+          <X className="h-4 w-4" />
+        </button>
+
+        {/* Full image — scrollable if taller than viewport */}
+        <div className="flex-1 overflow-auto">
+          {item.previewUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.previewUrl}
+              alt={item.file.name}
+              className="block h-auto w-full"
+            />
+          ) : (
+            <div className="flex flex-col items-center justify-center gap-4 py-24">
+              <FileImage className="h-16 w-16 text-white/40" />
+              <p className="text-sm text-white/60">{item.file.name}</p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer: file info + big destructive delete */}
+        <div className="flex flex-col items-center gap-4 bg-black/80 px-6 py-5">
+          <div className="text-center">
+            <p className="break-all text-sm font-medium leading-snug text-white">{item.file.name}</p>
+            <p className="mt-0.5 text-xs text-white/50">{fmtMB(item.file.size)}</p>
+          </div>
+          <Button
+            type="button"
+            variant="destructive"
+            size="lg"
+            onClick={onDelete}
+            className="w-full max-w-xs rounded-2xl text-base font-bold"
+          >
+            <Trash className="mr-2 h-5 w-5" />
+            🗑️ XÓA KHỎI DANH SÁCH
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
