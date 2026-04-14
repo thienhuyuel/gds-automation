@@ -984,6 +984,7 @@ function PreUploadDialog({
           background:  DS.surfaceContainerLowest,
           boxShadow:   DS.elevatedShadow,
           maxWidth:    520,
+          fontFamily:  "var(--font-inter), sans-serif",
         }}
       >
         {/* ── Header ── */}
@@ -1131,6 +1132,7 @@ function LightboxDialog({
           background: DS.onSurface,
           boxShadow:  DS.elevatedShadow,
           maxWidth:   "min(90vw, 900px)",
+          fontFamily: "var(--font-inter), sans-serif",
         }}
       >
         {/* DS-styled close button */}
@@ -1183,7 +1185,7 @@ function LightboxDialog({
             className="w-full max-w-xs rounded-2xl text-base font-bold tracking-[-0.01em]"
           >
             <Trash className="mr-2 h-5 w-5" />
-            🗑️ XÓA KHỎI DANH SÁCH
+            XÓA KHỎI DANH SÁCH
           </Button>
         </div>
       </DialogContent>
