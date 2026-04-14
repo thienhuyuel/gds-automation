@@ -896,8 +896,10 @@ function FileThumb({ item, onClick }: { item: FileItem; onClick: () => void }) {
       type="button"
       onClick={onClick}
       aria-label="Xem phóng to"
-      className="group relative w-full overflow-hidden rounded-2xl text-left transition-transform duration-150 hover:scale-[1.02] focus-visible:outline-none"
+      className="group relative w-full overflow-hidden rounded-2xl text-left transition-shadow duration-150 focus-visible:outline-none"
       style={{ background: DS.surfaceContainerLow }}
+      onMouseEnter={e => (e.currentTarget.style.boxShadow = DS.elevatedShadow)}
+      onMouseLeave={e => (e.currentTarget.style.boxShadow = "none")}
     >
       {item.previewUrl ? (
         <>
