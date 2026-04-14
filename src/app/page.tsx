@@ -7,10 +7,10 @@ import {
   ChevronDown,
   CloudUpload,
   FileImage,
-  FileText,
   Loader2,
-  RefreshCw,
+  RotateCcw,
   Search,
+  Trash,
   X,
 } from "lucide-react";
 
@@ -274,7 +274,7 @@ export default function AutomationControlPage() {
             )}
             {boardError && !isFetchingBoard && (
               <button onClick={fetchBoardData} className="flex items-center gap-1.5 rounded-full px-3 py-1 font-medium transition-colors" style={{ background: "#fde8e8", color: "#c0392b" }}>
-                <AlertCircle className="h-3 w-3" /> Lỗi kết nối <RefreshCw className="h-3 w-3" />
+                <AlertCircle className="h-3 w-3" /> Lỗi kết nối <RotateCcw className="h-3 w-3" />
               </button>
             )}
             {boardData && !isFetchingBoard && (
@@ -300,7 +300,7 @@ export default function AutomationControlPage() {
               </p>
             </div>
             <button onClick={fetchBoardData} className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-medium text-red-600 transition-colors hover:bg-red-50" style={{ background: DS.surfaceContainerLowest }}>
-              <RefreshCw className="h-3.5 w-3.5" /> Thử lại
+              <RotateCcw className="h-3.5 w-3.5" /> Thử lại
             </button>
           </div>
         </div>
@@ -625,7 +625,7 @@ function CardCombobox({
         onMouseEnter={e => (e.currentTarget.style.background = DS.surfaceContainerHigh)}
         onMouseLeave={e => (e.currentTarget.style.background = DS.surfaceContainerLow)}
       >
-        <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+        <RotateCcw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
       </button>
     </div>
   );
@@ -782,12 +782,14 @@ function MultiFileDropzone({
         </div>
       )}
 
-      {/* Thumbnail grid */}
+      {/* Thumbnail grid — natural-ratio images, scrollable if tall */}
       {fileItems.length > 0 && (
-        <div className="grid grid-cols-3 gap-3">
-          {fileItems.map((item, i) => (
-            <FileThumb key={i} item={item} onRemove={() => onRemove(i)} />
-          ))}
+        <div className="overflow-auto rounded-2xl" style={{ maxHeight: "480px" }}>
+          <div className="grid grid-cols-2 gap-2">
+            {fileItems.map((item, i) => (
+              <FileThumb key={i} item={item} onRemove={() => onRemove(i)} />
+            ))}
+          </div>
         </div>
       )}
     </div>
@@ -798,47 +800,59 @@ function MultiFileDropzone({
 
 function FileThumb({ item, onRemove }: { item: FileItem; onRemove: () => void }) {
   return (
-    <div className="relative flex flex-col gap-1">
-      {/* Preview */}
-      <div
-        className="relative flex h-20 w-full items-center justify-center overflow-hidden rounded-2xl"
-        style={{ background: DS.surfaceContainerLow }}
-      >
-        {item.previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
+    <div
+      className="group relative overflow-hidden rounded-2xl"
+      style={{ background: DS.surfaceContainerLow }}
+    >
+      {item.previewUrl ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={item.previewUrl}
             alt={item.file.name}
-            className="h-full w-full object-cover"
+            className="block w-full h-auto"
           />
-        ) : (
-          <FileText className="h-7 w-7" style={{ color: DS.outline }} />
-        )}
 
-        {/* Remove button */}
-        <button
-          type="button"
-          onClick={onRemove}
-          aria-label="Xóa file"
-          className="absolute right-1.5 top-1.5 flex h-5 w-5 items-center justify-center rounded-full transition-opacity hover:opacity-80"
-          style={{ background: DS.onSurface, color: "#fff" }}
-        >
-          <X className="h-3 w-3" />
-        </button>
-
-        {/* Image icon overlay for non-image files */}
-        {!item.previewUrl && (
-          <FileImage className="absolute bottom-1.5 right-1.5 h-3.5 w-3.5" style={{ color: DS.outlineVariant }} />
-        )}
-      </div>
-
-      {/* File name */}
-      <p className="truncate text-center text-xs" style={{ color: DS.outline }} title={item.file.name}>
-        {item.file.name}
-      </p>
-      <p className="text-center text-xs" style={{ color: DS.outlineVariant }}>
-        {fmtMB(item.file.size)}
-      </p>
+          {/* Overlay — slides in on hover */}
+          <div className="absolute inset-x-0 bottom-0 flex items-center gap-2 bg-black/55 px-2.5 py-2 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+            <p className="flex-1 truncate text-xs text-white" title={item.file.name}>
+              {item.file.name}
+            </p>
+            <span className="shrink-0 text-xs text-white/60">{fmtMB(item.file.size)}</span>
+            <button
+              type="button"
+              onClick={onRemove}
+              aria-label="Xóa file"
+              className="shrink-0 rounded-lg p-1 text-white transition-colors hover:bg-white/20"
+            >
+              <Trash className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </>
+      ) : (
+        /* Non-image placeholder */
+        <div className="flex flex-col items-center justify-center gap-3 px-4 py-8">
+          <FileImage className="h-8 w-8" style={{ color: DS.outline }} />
+          <div className="w-full text-center">
+            <p className="truncate text-xs font-medium" style={{ color: DS.onSurface }} title={item.file.name}>
+              {item.file.name}
+            </p>
+            <p className="mt-0.5 text-xs" style={{ color: DS.outlineVariant }}>
+              {fmtMB(item.file.size)}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onRemove}
+            aria-label="Xóa file"
+            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs transition-colors hover:opacity-80"
+            style={{ background: DS.surfaceContainerHigh, color: DS.outline }}
+          >
+            <Trash className="h-3 w-3" />
+            Xóa
+          </button>
+        </div>
+      )}
     </div>
   );
 }
