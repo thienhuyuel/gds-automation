@@ -21,8 +21,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
-  DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
@@ -980,24 +978,43 @@ function PreUploadDialog({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onCancel(); }}>
       <DialogContent
-        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-3xl p-0"
-        style={{ background: DS.surfaceContainerLowest, maxWidth: 520 }}
+        showCloseButton={false}
+        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-3xl p-0 ring-0"
+        style={{
+          background:  DS.surfaceContainerLowest,
+          boxShadow:   DS.elevatedShadow,
+          maxWidth:    520,
+        }}
       >
-        <DialogHeader className="px-6 pt-6 pb-4">
-          <DialogTitle
-            className="text-base font-semibold tracking-[-0.01em]"
-            style={{ color: DS.onSurface, fontFamily: "var(--font-manrope), sans-serif" }}
+        {/* ── Header ── */}
+        <div className="flex items-start justify-between px-6 pt-6 pb-4">
+          <div>
+            <DialogTitle
+              className="text-base font-semibold tracking-[-0.01em]"
+              style={{ color: DS.onSurface, fontFamily: "var(--font-manrope), sans-serif" }}
+            >
+              Xác nhận file tải lên
+            </DialogTitle>
+            <p className="mt-1 text-xs" style={{ color: DS.outline }}>
+              {pendingItems.length} file đang chờ · Tổng sau khi xác nhận:{" "}
+              <strong style={{ color: DS.onSurface }}>{totalAfter}/{maxFiles}</strong>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Đóng"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-colors"
+            style={{ background: DS.surfaceContainerHigh, color: DS.outline }}
+            onMouseEnter={e => (e.currentTarget.style.background = DS.surfaceContainerHighest)}
+            onMouseLeave={e => (e.currentTarget.style.background = DS.surfaceContainerHigh)}
           >
-            Xác nhận file tải lên
-          </DialogTitle>
-          <p className="text-xs" style={{ color: DS.outline }}>
-            {pendingItems.length} file đang chờ · Tổng sau khi xác nhận:{" "}
-            <strong style={{ color: DS.onSurface }}>{totalAfter}/{maxFiles}</strong>
-          </p>
-        </DialogHeader>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-        {/* Pending thumbnails — scrollable */}
-        <div className="flex-1 overflow-y-auto px-6 pb-2">
+        {/* ── Pending thumbnails — scrollable ── */}
+        <div className="flex-1 overflow-y-auto px-6 pb-4">
           <div className="grid grid-cols-2 gap-3">
             {pendingItems.map((item, i) => (
               <div
@@ -1008,14 +1025,10 @@ function PreUploadDialog({
                 {item.previewUrl ? (
                   <>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.previewUrl}
-                      alt={item.file.name}
-                      className="block h-auto w-full"
-                    />
-                    <div className="absolute inset-x-0 bottom-0 flex items-start gap-2 bg-black/55 px-2.5 py-2">
-                      <p className="flex-1 break-all text-xs leading-snug text-white">{item.file.name}</p>
-                      <span className="shrink-0 text-xs text-white/60">{fmtMB(item.file.size)}</span>
+                    <img src={item.previewUrl} alt={item.file.name} className="block h-auto w-full" />
+                    <div className="absolute inset-x-0 bottom-0 bg-black/55 px-2.5 py-2">
+                      <p className="break-all text-xs leading-snug text-white">{item.file.name}</p>
+                      <p className="text-xs text-white/55">{fmtMB(item.file.size)}</p>
                     </div>
                   </>
                 ) : (
@@ -1032,22 +1045,33 @@ function PreUploadDialog({
                   type="button"
                   onClick={() => onRemove(i)}
                   aria-label="Xóa file"
-                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-full bg-black/60 text-white transition-opacity hover:bg-black/80"
+                  className="absolute right-2 top-2 flex h-6 w-6 items-center justify-center rounded-xl transition-colors"
+                  style={{ background: DS.surfaceContainerLowest, color: DS.onSurface }}
+                  onMouseEnter={e => (e.currentTarget.style.background = "#fde8e8")}
+                  onMouseLeave={e => (e.currentTarget.style.background = DS.surfaceContainerLowest)}
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
 
-            {/* "Add more" card */}
+            {/* "Thêm file" card */}
             {canAddMore && (
               <button
                 type="button"
                 onClick={onAddMore}
-                className="flex flex-col items-center justify-center gap-2 rounded-2xl py-10 transition-colors"
+                className="flex flex-col items-center justify-center gap-2 rounded-2xl py-10 transition-all duration-150"
                 style={{ border: `2px dashed ${DS.outlineVariant}`, color: DS.outline }}
-                onMouseEnter={e => (e.currentTarget.style.borderColor = DS.primaryContainer)}
-                onMouseLeave={e => (e.currentTarget.style.borderColor = DS.outlineVariant)}
+                onMouseEnter={e => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = DS.primaryContainer;
+                  (e.currentTarget as HTMLButtonElement).style.color = DS.primaryContainer;
+                  (e.currentTarget as HTMLButtonElement).style.background = "#d2e4ff30";
+                }}
+                onMouseLeave={e => {
+                  (e.currentTarget as HTMLButtonElement).style.borderColor = DS.outlineVariant;
+                  (e.currentTarget as HTMLButtonElement).style.color = DS.outline;
+                  (e.currentTarget as HTMLButtonElement).style.background = "transparent";
+                }}
               >
                 <Plus className="h-5 w-5" />
                 <span className="text-xs font-medium">Thêm file</span>
@@ -1056,26 +1080,31 @@ function PreUploadDialog({
           </div>
         </div>
 
-        <DialogFooter className="flex gap-3 border-t px-6 py-4" style={{ borderColor: `${DS.outlineVariant}40` }}>
-          <Button
+        {/* ── Footer ── */}
+        <div
+          className="flex gap-3 px-6 py-4"
+          style={{ borderTop: `1px solid ${DS.outlineVariant}40` }}
+        >
+          <button
             type="button"
-            variant="ghost"
             onClick={onCancel}
-            className="flex-1 rounded-2xl"
-            style={{ color: DS.outline }}
+            className="flex-1 rounded-2xl py-2.5 text-sm font-medium transition-colors"
+            style={{ background: DS.surfaceContainerHigh, color: DS.outline }}
+            onMouseEnter={e => (e.currentTarget.style.background = DS.surfaceContainerHighest)}
+            onMouseLeave={e => (e.currentTarget.style.background = DS.surfaceContainerHigh)}
           >
             Hủy
-          </Button>
-          <Button
+          </button>
+          <button
             type="button"
             onClick={onConfirm}
             disabled={pendingItems.length === 0}
-            className="flex-1 rounded-2xl font-semibold text-white"
-            style={{ background: pendingItems.length ? DS.ctaGradient : DS.surfaceContainerHigh }}
+            className="flex-1 rounded-2xl py-2.5 text-sm font-semibold text-white transition-opacity disabled:opacity-40"
+            style={{ background: DS.ctaGradient }}
           >
             Xác nhận & Tải lên
-          </Button>
-        </DialogFooter>
+          </button>
+        </div>
       </DialogContent>
     </Dialog>
   );
@@ -1096,15 +1125,23 @@ function LightboxDialog({
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) onClose(); }}>
       <DialogContent
-        className="flex max-h-[95vh] flex-col gap-0 overflow-hidden rounded-3xl p-0"
-        style={{ background: "#000", maxWidth: "min(90vw, 900px)" }}
+        showCloseButton={false}
+        className="flex max-h-[95vh] flex-col gap-0 overflow-hidden rounded-3xl p-0 ring-0"
+        style={{
+          background: DS.onSurface,
+          boxShadow:  DS.elevatedShadow,
+          maxWidth:   "min(90vw, 900px)",
+        }}
       >
-        {/* Close button */}
+        {/* DS-styled close button */}
         <button
           type="button"
           onClick={onClose}
           aria-label="Đóng"
-          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/15 text-white transition-colors hover:bg-white/30"
+          className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-xl transition-colors"
+          style={{ background: "rgba(255,255,255,0.10)", color: DS.surfaceContainerLowest }}
+          onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.22)")}
+          onMouseLeave={e => (e.currentTarget.style.background = "rgba(255,255,255,0.10)")}
         >
           <X className="h-4 w-4" />
         </button>
@@ -1113,31 +1150,37 @@ function LightboxDialog({
         <div className="flex-1 overflow-auto">
           {item.previewUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={item.previewUrl}
-              alt={item.file.name}
-              className="block h-auto w-full"
-            />
+            <img src={item.previewUrl} alt={item.file.name} className="block h-auto w-full" />
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 py-24">
-              <FileImage className="h-16 w-16 text-white/40" />
-              <p className="text-sm text-white/60">{item.file.name}</p>
+              <FileImage className="h-16 w-16" style={{ color: DS.outlineVariant }} />
+              <p className="text-sm" style={{ color: DS.outline }}>{item.file.name}</p>
             </div>
           )}
         </div>
 
-        {/* Footer: file info + big destructive delete */}
-        <div className="flex flex-col items-center gap-4 bg-black/80 px-6 py-5">
+        {/* ── Footer — DS dark surface ── */}
+        <div
+          className="flex flex-col items-center gap-4 px-6 py-5"
+          style={{ borderTop: `1px solid ${DS.outlineVariant}20` }}
+        >
           <div className="text-center">
-            <p className="break-all text-sm font-medium leading-snug text-white">{item.file.name}</p>
-            <p className="mt-0.5 text-xs text-white/50">{fmtMB(item.file.size)}</p>
+            <p
+              className="break-all text-sm font-medium leading-snug"
+              style={{ color: DS.surfaceContainerLowest, fontFamily: "var(--font-inter), sans-serif" }}
+            >
+              {item.file.name}
+            </p>
+            <p className="mt-0.5 text-xs" style={{ color: DS.outlineVariant }}>
+              {fmtMB(item.file.size)}
+            </p>
           </div>
           <Button
             type="button"
             variant="destructive"
             size="lg"
             onClick={onDelete}
-            className="w-full max-w-xs rounded-2xl text-base font-bold"
+            className="w-full max-w-xs rounded-2xl text-base font-bold tracking-[-0.01em]"
           >
             <Trash className="mr-2 h-5 w-5" />
             🗑️ XÓA KHỎI DANH SÁCH
