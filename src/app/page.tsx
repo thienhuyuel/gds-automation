@@ -255,7 +255,7 @@ export default function AutomationControlPage() {
               <EtherCard title="Chọn Trello Card">
                 <TrelloSelect
                   value={selectedCard}
-                  onValueChange={v => setSelectedCard(v ?? "")}
+                  onValueChange={(v: string | null) => setSelectedCard(v ?? "")}
                   disabled={isFetchingBoard}
                   placeholder="Chọn card..."
                   loading={isFetchingBoard}
@@ -268,7 +268,7 @@ export default function AutomationControlPage() {
               <EtherCard title="Chuyển sang Cột (List)">
                 <TrelloSelect
                   value={targetList}
-                  onValueChange={v => setTargetList(v ?? "")}
+                  onValueChange={(v: string | null) => setTargetList(v ?? "")}
                   disabled={isFetchingBoard}
                   placeholder="Chọn cột đích..."
                   loading={isFetchingBoard}
@@ -425,7 +425,7 @@ function TrelloSelect({
   items,
 }: {
   value: string;
-  onValueChange: (v: string) => void;
+  onValueChange: (v: string | null) => void;
   disabled?: boolean;
   placeholder: string;
   loading?: boolean;
