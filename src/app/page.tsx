@@ -81,11 +81,11 @@ export default function AutomationControlPage() {
 
       <main className="mx-auto max-w-7xl px-8 py-10">
         <form onSubmit={handleSubmit} noValidate>
-          {/* 3-column grid: col1=card list, col2=desc+checklist (hidden when no card), col3=upload */}
-          <div className={`grid gap-6 ${selectedCard ? "lg:grid-cols-10" : "lg:grid-cols-5"}`}>
+          {/* 3-column grid: col1=4, col2=5, col3=3 (grid-cols-12) */}
+          <div className="grid gap-6 lg:grid-cols-12">
 
-            {/* Col 1: Card list — always visible */}
-            <div className="lg:col-span-2">
+            {/* Col 1: Card list — span-4 */}
+            <div className="lg:col-span-4">
               <EtherCard
                 badge={board.boardData ? `${board.boardData.cards.length} cards` : undefined}
                 headerEnd={
@@ -107,10 +107,15 @@ export default function AutomationControlPage() {
               </EtherCard>
             </div>
 
-            {/* Col 2: Description + Checklist — only when card is selected */}
+            {/* Col 2: Description + Upload — span-5 (span-8 khi chưa chọn card) */}
+            <div className={`flex flex-col gap-6 ${selectedCard ? "lg:col-span-5" : "lg:col-span-8"}`}>
+              {selectedCard && <CardDescriptionPanel card={selectedCard} />}
+              <UploadSection upload={upload} />
+            </div>
+
+            {/* Col 3: Checklist + Submit — span-3, only when card is selected */}
             {selectedCard && (
-              <div className="flex flex-col gap-6 lg:col-span-5">
-                <CardDescriptionPanel card={selectedCard} />
+              <div className="flex flex-col gap-6 lg:col-span-3">
                 <DynamicChecklist
                   card={selectedCard}
                   cardType={cardType}
@@ -118,22 +123,17 @@ export default function AutomationControlPage() {
                   liveState={liveState} onLiveChange={setLiveState}
                   hasFiles={upload.fileItems.length > 0}
                 />
+                <SubmitCTA
+                  formValid={formValid}
+                  isSubmitting={isSubmitting}
+                  selectedCard={selectedCard}
+                  fileCount={upload.fileItems.length}
+                  cardType={cardType}
+                  casState={casState}
+                  liveState={liveState}
+                />
               </div>
             )}
-
-            {/* Col 3: Upload + Submit — always span-3 (works for both grid-cols-5 and grid-cols-10) */}
-            <div className="flex flex-col gap-6 lg:col-span-3">
-              <UploadSection upload={upload} />
-              <SubmitCTA
-                formValid={formValid}
-                isSubmitting={isSubmitting}
-                selectedCard={selectedCard}
-                fileCount={upload.fileItems.length}
-                cardType={cardType}
-                casState={casState}
-                liveState={liveState}
-              />
-            </div>
           </div>
         </form>
       </main>
