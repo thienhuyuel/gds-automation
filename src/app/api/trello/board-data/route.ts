@@ -39,7 +39,13 @@ export async function GET() {
 
   const [listsRes, cardsRes] = await Promise.all([
     fetch(trelloUrl(`/boards/${boardId}/lists`, { ...auth, fields: "id,name" })),
-    fetch(trelloUrl(`/lists/${SOURCE_LIST_ID}/cards`, { ...auth, fields: "id,name,idList,labels", filter: "open" })),
+    fetch(trelloUrl(`/lists/${SOURCE_LIST_ID}/cards`, {
+      ...auth,
+      fields:        "id,name,idList,labels,due,idMembers",
+      filter:        "open",
+      members:       "true",
+      member_fields: "fullName,initials,avatarHash",
+    })),
   ]);
 
   if (!listsRes.ok || !cardsRes.ok) {
@@ -52,9 +58,17 @@ export async function GET() {
     );
   }
 
+  type RawMember = { id: string; fullName: string; initials: string; avatarHash: string | null };
+  type RawCard   = {
+    id: string; name: string; idList: string;
+    labels:  { id: string; name: string; color: string }[];
+    due:     string | null;
+    members: RawMember[];
+  };
+
   const [lists, cards] = await Promise.all([
     listsRes.json() as Promise<{ id: string; name: string }[]>,
-    cardsRes.json() as Promise<{ id: string; name: string; idList: string; labels: { id: string; name: string; color: string }[] }[]>,
+    cardsRes.json() as Promise<RawCard[]>,
   ]);
 
   return NextResponse.json({ lists, cards });

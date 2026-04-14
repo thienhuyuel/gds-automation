@@ -1,0 +1,18 @@
+export const DS = {
+  surface:                 "#f7f9fb",
+  surfaceContainerLow:     "#f2f4f6",
+  surfaceContainerLowest:  "#ffffff",
+  surfaceContainerHigh:    "#e6e8ea",
+  surfaceContainerHighest: "#e0e3e5",
+  primary:                 "#004f89",
+  primaryContainer:        "#0067b1",
+  onSurface:               "#191c1e",
+  onSurfaceVariant:        "#414751",
+  outline:                 "#717782",
+  outlineVariant:          "#c1c7d3",
+  tertiary:                "#7b3b00",
+  tertiaryContainer:       "#9f4e00",
+  ambientShadow:           "0px 2px 15px 0px rgba(25,28,30,0.04)",
+  elevatedShadow:          "0px 8px 32px 0px rgba(25,28,30,0.10)",
+  ctaGradient:             "linear-gradient(135deg, #004f89 0%, #0067b1 100%)",
+} as const;
